@@ -56,6 +56,7 @@ pod_prefix="rickshaw"
 project_name="crucible-rickshaw"
 userenv="rhubi8"
 hostNetwork="0"
+localRegistry="0"
 hugepage="0"
 osruntime="pod"
 runtimeClassName=""
@@ -439,6 +440,9 @@ function process_k8s_opts() {
             hostNetwork)
                 hostNetwork="$val"
                 ;;
+            localRegistry)
+                localRegistry="$val"
+                ;;
             runtimeClassName)
                 runtimeClassName="$val"
                 ;;
@@ -792,6 +796,12 @@ function build_pod_spec() {
     echo "  }" >>$json
     echo "}" >>$json
     cleanup_json "${json}"
+
+    if [ "$localRegistry" == "1" ]; then
+        # remove quay.io/ from full name
+        image_path=`echo ${image#*/}`
+        do_ssh $user@$host "oc image mirror -a /opt/registry/pull-secret-disconnected.txt $image $host:5000/$image_path --keep-manifest-list --continue-on-error=true"
+    fi
 }
 
 function create_pods() {
