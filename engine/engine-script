@@ -81,7 +81,7 @@ do_roadblock collect-sysinfo-begin ${default_timeout}
 roadblock_rc=$?
 roadblock_exit_on_error ${roadblock_rc}
 
-collect_sysinfo
+#collect_sysinfo
 
 do_roadblock collect-sysinfo-end ${default_timeout}
 roadblock_rc=$?

@@ -84,10 +84,16 @@ function cleanup_json() {
     fi
 }
 
+HN_NO_SVC=1
+
 function endpoint_k8s_test_stop() {
     local msgs_dir="$1"; shift
     local test_id="$1"; shift
     echo "Running endpoint_k8s_test_stop"
+
+    if [ "$HN_NO_SVC" -eq 1  ]; then
+        return
+    fi
 
     echo "Endpoints:"
     do_ssh $user@$host kubectl -n $project_name get endpoints -o yaml
@@ -175,6 +181,10 @@ function endpoint_k8s_test_start() {
                 # connections to exactly the pod we want.
                 #
                 if [ "$client_outside_cluster" -ne 1 ]; then
+                  if  [ "$HN_NO_SVC" -eq 1 ]; then
+                    echo "HN running HN_NO_SVC mode so not creating a k8s-service or k8s-endpoint"
+                    svc_ip=$ip
+                  else # HN_NO_SVC
                     local svc_json=$endpoint_run_dir/$name-svc.json
                     echo name: $name
                     echo ports: $ports
@@ -246,6 +256,7 @@ function endpoint_k8s_test_start() {
                     cleanup_json "${svc_endp_json}"
                     cat "$svc_endp_json" | do_ssh $user@$host "kubectl create -f -" >"$endpoint_run_dir/create-svc-endp-$name.txt"
                     # client inside cluster
+                  fi #HN NO_SVC
                 else
                     # client outside cluster
                     echo "Client is outside cluster, so creating ingress NodePort Service"
@@ -1098,7 +1109,7 @@ function endpoint_k8s_sysinfo() {
 
         do_ssh ${user}@${host} mkdir -p ${remote_dir}/must-gather
 
-        do_ssh ${user}@${host} oc adm must-gather --dest-dir=${remote_dir}/must-gather > ${local_dir}/must-gather.txt 2>&1
+        # do_ssh ${user}@${host} oc adm must-gather --dest-dir=${remote_dir}/must-gather > ${local_dir}/must-gather.txt 2>&1
         do_scp ${user}@${host} ${remote_dir}/must-gather "" ${local_dir}
 
         do_ssh ${user}@${host} rm -Rf ${remote_dir}
